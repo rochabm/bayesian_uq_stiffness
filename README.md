@@ -134,8 +134,10 @@ inverse problems with `--gamma` / `--delta`.
 
 ## Step 2 — Gradient and Hessian verification (Fig. 2)
 
+### Command
+
 ```bash
-python -m verification.taylor_test --output-dir results/verification
+python -m verification.taylor_test_log --output-dir results/verification-log
 ```
 
 It prints a table of R_grad and R_hess with the rate between consecutive eps,
@@ -145,7 +147,7 @@ and the average rates.
 
 ```
 Average rate R_grad: 2.000  (expected 2)  ✓ PASS
-Average rate R_hess: 2.992  (expected 3)  ✓ PASS
+Average rate R_hess: 3.002  (expected 3)  ✓ PASS
 ```
 
 
