@@ -72,18 +72,25 @@ All cases use the prior mean m0 = ln 2 (C = 2 kPa, healthy tissue).
 ### Commands
 
 ```bash
+# Case 1 was set by hand
+# Case 1 (ellipsoid, linear truth): sigma from the amplitude, rho = ventricle size   (~1 min)
+python -m priors.prior_calibration --mesh ellipsoid --order 2 --log --m0 0.693147 \
+    --truth linear --sigma 0.2027326 --rho 50 --output-dir results/priors/calib_case1
+
 # Case 2 (ellipsoid, spherical fibrosis): targets from the ground truth   (~1 min)
 python -m priors.prior_calibration --mesh ellipsoid --order 2 --log --m0 0.693147 \
     --truth fibrosis --match-truth --output-dir results/priors/calib_case2
+
+ python -m priors.plot_prior_calibration results/priors/calib_case2 \
+    --plane-point -5 -2 -9 --plane-normal 0 1 0
+
 
 # Case 3 (patient LV, segmented fibrosis): k = 4, targets from the ground truth   (~10 min)
 python -m priors.prior_calibration --mesh data/Patient_7_lv_tissue.vtu --order 4 --log \
     --m0 0.6931471805599453 --truth tissue --match-truth --centre-truth --n-ref 30 \
     --output-dir results/priors/calib_case3
 
-# Case 1 (ellipsoid, linear truth): sigma from the amplitude, rho = ventricle size   (~1 min)
-python -m priors.prior_calibration --mesh ellipsoid --order 2 --log --m0 0.693147 \
-    --truth linear --sigma 0.2027326 --rho 50 --output-dir results/priors/calib_case1
+python -m priors.plot_prior_calibration results/priors/calib_case3
 
 # Fig. 1: prior of Case 2 (m0 +- 2 sigma, prior samples, ground truth)
 python -m priors.plot_prior_calibration results/priors/calib_case2 \
