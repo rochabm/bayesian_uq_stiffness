@@ -2,13 +2,11 @@
 
 Code to reproduce the results of the paper
 
-> J. Rocha et al., *Bayesian framework for patient-specific cardiac ... (2026)*
+> *Bayesian framework for patient-specific cardiac ... (2026)*
 
-The stiffness is inferred as the log-stiffness m = ln C, with a Gaussian prior
-of BiLaplacian type, a MAP estimate by inexact Newton-CG, and a Laplace
-approximation of the posterior.
+The stiffness is inferred as the log-stiffness m = ln C, with a Gaussian prior of BiLaplacian type, a MAP estimate by inexact Newton-CG, and a Laplace approximation of the posterior.
 
-> **Status:** this README is written step by step. So far it covers only the
+> **Status:** this README is written step by step. So far it covers only the 
 > **prior calibration (Table 2 and Fig. 1)**.
 
 ---
