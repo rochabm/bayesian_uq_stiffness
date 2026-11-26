@@ -150,20 +150,8 @@ Average rate R_grad: 2.000  (expected 2)  ✓ PASS
 Average rate R_hess: 3.002  (expected 3)  ✓ PASS
 ```
 
-
-Outputs in `results/verification/` (change with `--output-dir`):
-
 | File | Content |
 |---|---|
 | **`fig_taylor.pdf/.png`** | **Fig. 2** of the paper (paper style from `paper_style.py`) |
 | `taylor_remainders.txt` | eps, R_grad, R_hess |
 
-**Notes**
-
-- The test differentiates with respect to C itself, with the regularized
-  functional J = J_data + alpha J_smooth (alpha = 1e-3), not the MAP functional
-  in m = ln C used for the results. `HessianOperator` (`hessian_ucq.py`) is the
-  same code in both cases (UFL differentiates exp(m) automatically), so the
-  test checks the same implementation.
-- The ellipsoid mesh is read from `lv_ellipsoid/` (created in Step 1); if the
-  folder does not exist, the script creates it.
