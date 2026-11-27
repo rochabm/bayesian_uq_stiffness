@@ -234,35 +234,3 @@ CASES=fibrosis PHASES=newtoncg bash ellipsoid/run_noise_study.sh --gtol 1e-6 --f
 ### Outputs
 
 In `results/ellipsoid/noise_study/` (change with `OUT=...`):
-
-| File | Content |
-|---|---|
-| **`table_paper.tex`** | **Table 3** of the paper (`table_paper_standalone.tex` compiles on its own) |
-| `tables.tex` | four detailed tables: data and noise, cost, accuracy, agreement of the two methods |
-| `<method>/noise_XXX/<case>/metrics_<case>.json` | all settings, costs and errors of one run |
-| `<method>/noise_XXX/<case>/map_comparison_<case>.xdmf/.h5` | fields (truth, initial guess, MAP, errors) for ParaView and for Fig. 3 |
-| `<method>/noise_XXX/<case>/m_map_<method>_<case>.npy` | the MAP point |
-| `<method>/noise_XXX/run_<case>.log` | console output |
-| `forward/` | files written by `forward.py` during data generation |
-
-### Expected results (Table 3)
-
-| Problem | Noise | L-BFGS-B iter. / fwd | Newton-CG iter. / fwd / Hm | e_C^L2 [%] | e_C^core [%] |
-|---|---|---|---|---|---|
-| Case 1 | 0 % | 93 / 104 | 10 / 11 / 112 | 0.21 | – |
-| Case 1 | 1 % | 81 / 87 | 9 / 10 / 106 | 2.15 | – |
-| Case 1 | 3 % | 129 / 136 | 9 / 10 / 171 | 3.12 | – |
-| Case 2 | 0 % | 243 / 267 | 12 / 13 / 285 | 1.44 | 2.15 |
-| Case 2 | 1 % | 119 / 133 | 11 / 12 / 158 | 5.23 | 4.93 |
-| Case 2 | 3 % | 67 / 73 | 9 / 10 / 95 | 8.74 | 8.65 |
-
-The Newton-CG counts (iterations, forward solves, Hessian-vector products) and
-the errors are reproduced exactly. The L-BFGS-B counts can differ by a few
-iterations between machines or library builds: near the optimum the objective is
-flat, so round-off changes which line-search steps are accepted. A rerun gave
-128 / 135 (Case 1, 3 %), 249 / 274 (Case 2, 0 %) and 120 / 132 (Case 2, 1 %),
-with the same MAP points and errors. Wall times and speed-ups depend on the
-machine. Both methods reach the same MAP point (max nodal |Δm| < 4 × 10⁻⁶).
-
-**Note:** `forward.py` also writes `dof_coords.csv/.vtk/.xyz` (the measurement points)
-into the folder the command is run from.
