@@ -314,8 +314,9 @@ samples. All runs use 0 % noise and the priors of Step 1.
 `run_uq_study.sh` has two parts:
 
 ```bash
-bash ellipsoid/run_uq_study.sh run       # UQ runs (~3 h, serial)
-bash ellipsoid/run_uq_study.sh figures   # all figures and tables, from the runs
+bash ellipsoid/run_uq_study.sh run       # the 4 UQ runs (64 points ×2 cases, 32 and 16 points)
+bash ellipsoid/run_uq_study.sh figures   # Figs. 3–8 and Table 4, in one go
+bash ellipsoid/run_uq_study.sh all       # both
 ```
 
 | Part | What | Output in `results/ellipsoid/` |
