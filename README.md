@@ -8,8 +8,8 @@ The stiffness is inferred as the log-stiffness m = ln C, with a Gaussian prior o
 
 > **Status:** this README is written step by step. So far it covers the
 > **prior calibration (Table 2, Fig. 1)**, the **Taylor test (Fig. 2)** and the
-> **MAP estimation of Cases 1–2 (Table 3, Fig. 3)** and the **UQ of Cases 1–2
-> (Figs. 4–8, Table 4)**.
+> **MAP estimation of Cases 1–2 (Table 3, Fig. 3)**, the **UQ of Cases 1–2
+> (Figs. 4–8, Table 4)** and **Case 3, patient LV (Figs. 9–11, Table 5)**.
 
 ---
 
@@ -30,19 +30,29 @@ bayesian_uq_stiffness/
 ├── verification/
 │   ├── taylor_test_log.py       # Taylor test of the MAP functional in m = ln C -> Fig. 2
 │   └── taylor_test.py           # the same test in the earlier parameterization in C
-└── ellipsoid/                   # Cases 1 (linear) and 2 (fibrosis), ellipsoid LV
-    ├── forward.py                # forward problem, synthetic data
-    ├── map_comparison.py         # MAP: L-BFGS-B vs inexact Newton-CG
-    ├── run_noise_study.sh       # map_comparison for both cases, 0/1/3 % noise -> Table 3
-    ├── make_latex_tables.py     # LaTeX tables from the MAP metrics  -> Table 3
-    ├── plot_maps.py             # ground truth and MAP maps          -> Fig. 3
-    ├── uq.py                    # Laplace approximation: MAP, eigenpairs, variance, samples
-    ├── run_uq_study.sh          # UQ runs (64/32/16 points), then all UQ figures and tables
-    ├── plot_uq.py               # eigenvalue spectra; truth, MAP, posterior samples -> Figs. 4, 5
-    ├── uq_qoi.py                # regional stiffness from 1000 samples              -> Fig. 6
-    ├── uq_regions.py            # truth, P(C > 4 kPa), std reduction; regional stats -> Fig. 7
-    ├── plot_scarce.py           # 16 measurement points                              -> Fig. 8
-    └── table_sensors.py         # 64 / 32 / 16 points                                -> Table 4
+├── ellipsoid/                   # Cases 1 (linear) and 2 (fibrosis), ellipsoid LV
+│   ├── forward.py                # forward problem, synthetic data
+│   ├── map_comparison.py         # MAP: L-BFGS-B vs inexact Newton-CG
+│   ├── run_noise_study.sh       # map_comparison for both cases, 0/1/3 % noise -> Table 3
+│   ├── make_latex_tables.py     # LaTeX tables from the MAP metrics  -> Table 3
+│   ├── plot_maps.py             # ground truth and MAP maps          -> Fig. 3
+│   ├── uq.py                    # Laplace approximation: MAP, eigenpairs, variance, samples
+│   ├── run_uq_study.sh          # UQ runs (64/32/16 points), then all UQ figures and tables
+│   ├── plot_uq.py               # eigenvalue spectra; truth, MAP, posterior samples -> Figs. 4, 5
+│   ├── uq_qoi.py                # regional stiffness from 1000 samples              -> Fig. 6
+│   ├── uq_regions.py            # truth, P(C > 4 kPa), std reduction; regional stats -> Fig. 7
+│   ├── plot_scarce.py           # 16 measurement points                              -> Fig. 8
+│   └── table_sensors.py         # 64 / 32 / 16 points                                -> Table 4
+└── patient/                     # Case 3, patient LV (Patient 7) with segmented fibrosis
+    ├── lv_geometry.py           # reads the .vtu: boundary markers, fibres, tissue labels
+    ├── forward.py               # forward problem, synthetic data
+    ├── map_estimate.py          # MAP by inexact Newton-CG
+    ├── uq.py                    # Laplace approximation: eigenpairs, variance, samples, QoIs
+    ├── run_patient.sh           # MAP and UQ runs, then all Case 3 figures and tables
+    ├── plot_lv_views.py         # truth and MAP from five views            -> Fig. 9
+    ├── plot_posteriors_lv_patient_v2.py  # truth, MAP, posterior samples   -> Fig. 10
+    ├── plot_uq_lv_patient.py    # posterior summary                        -> Fig. 11
+    └── table_patient.py         # MAP cost and errors                      -> Table 5
 ```
 
 **Run every command from the repository root.** The scripts are called as
@@ -304,7 +314,7 @@ python -m ellipsoid.plot_maps --root results/ellipsoid/noise_study \
 
 ---
 
-## Step 4 — Uncertainty quantification, Cases 1–2 (Figs. 4–8, Table 4)
+## Step 4 — Uncertainty quantification and sparse measurements, Cases 1–2 (Sections 3.2–3.3: Figs. 4–8, Table 4)
 
 `uq.py` computes the MAP point (inexact Newton-CG), the leading eigenpairs of
 the prior-preconditioned data-misfit Hessian (randomized double pass), the
@@ -314,9 +324,8 @@ samples. All runs use 0 % noise and the priors of Step 1.
 `run_uq_study.sh` has two parts:
 
 ```bash
-bash ellipsoid/run_uq_study.sh run       # the 4 UQ runs (64 points ×2 cases, 32 and 16 points)
-bash ellipsoid/run_uq_study.sh figures   # Figs. 3–8 and Table 4, in one go
-bash ellipsoid/run_uq_study.sh all       # both
+bash ellipsoid/run_uq_study.sh run       # UQ runs (~3 h, serial)
+bash ellipsoid/run_uq_study.sh figures   # all figures and tables, from the runs
 ```
 
 | Part | What | Output in `results/ellipsoid/` |
@@ -330,3 +339,31 @@ bash ellipsoid/run_uq_study.sh all       # both
 | `figures` | **Fig. 8** 16 measurement points | `fig_scarce_s16.pdf` |
 | `figures` | **Table 4** 64 / 32 / 16 points | `table_sensors.tex` |
 | `figures` | **Fig. 3** with the colour range of Fig. 5 (needs Step 3) | `fig_maps.pdf` |
+
+---
+
+## Step 5 — Case 3, patient-specific LV (Section 3.4: Figs. 9–11, Table 5)
+
+Patient 7 mesh (`data/Patient_7_lv_tissue.vtu`): C = 2 kPa in healthy tissue
+and 6 kPa in the labelled fibrosis. `map_estimate.py` computes the MAP point by
+inexact Newton-CG; `uq.py` reuses it and computes the Laplace approximation
+(1100 eigenpairs), the posterior variance, samples and the regional stiffness.
+Both use 128 measurement points, p_endo = 3 kPa, 0 % noise and the Case 3 prior
+of Step 1 (k = 4, gamma = 2.038, delta = 0.1234).
+
+```bash
+bash patient/run_patient.sh run       # MAP (~2 h) and UQ (several hours), serial
+bash patient/run_patient.sh figures   # all figures and tables, from the runs
+```
+
+| Part | What | Output in `results/patient/` |
+|---|---|---|
+| `run` | MAP point | `map/` |
+| `run` | Laplace approximation | `uq/` |
+| `figures` | **Fig. 9** truth and MAP, five views | `fig_lv_views.pdf` |
+| `figures` | **Fig. 10** truth, MAP, three posterior samples | `fig_posteriors.pdf` |
+| `figures` | **Fig. 11** posterior summary | `fig_uq_panel.pdf` |
+| `figures` | **Table 5** MAP cost and errors | `table_patient.tex` |
+
+Figs. 10 and 11 use one camera, turned around the long axis by `AZ` degrees
+(default 0): e.g. `AZ=216 bash patient/run_patient.sh figures`.
