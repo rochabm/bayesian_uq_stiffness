@@ -8,7 +8,8 @@ The stiffness is inferred as the log-stiffness m = ln C, with a Gaussian prior o
 
 > **Status:** this README is written step by step. So far it covers the
 > **prior calibration (Table 2, Fig. 1)**, the **Taylor test (Fig. 2)** and the
-> **MAP comparison of Cases 1–2 (Table 3)**.
+> **MAP estimation of Cases 1–2 (Table 3, Fig. 3)** and the **UQ of Cases 1–2
+> (Figs. 4–8, Table 4)**.
 
 ---
 
@@ -33,7 +34,15 @@ bayesian_uq_stiffness/
     ├── forward.py                # forward problem, synthetic data
     ├── map_comparison.py         # MAP: L-BFGS-B vs inexact Newton-CG
     ├── run_noise_study.sh       # map_comparison for both cases, 0/1/3 % noise -> Table 3
-    └── make_latex_tables.py     # LaTeX tables from the MAP metrics  -> Table 3
+    ├── make_latex_tables.py     # LaTeX tables from the MAP metrics  -> Table 3
+    ├── plot_maps.py             # ground truth and MAP maps          -> Fig. 3
+    ├── uq.py                    # Laplace approximation: MAP, eigenpairs, variance, samples
+    ├── run_uq_study.sh          # UQ runs (64/32/16 points), then all UQ figures and tables
+    ├── plot_uq.py               # eigenvalue spectra; truth, MAP, posterior samples -> Figs. 4, 5
+    ├── uq_qoi.py                # regional stiffness from 1000 samples              -> Fig. 6
+    ├── uq_regions.py            # truth, P(C > 4 kPa), std reduction; regional stats -> Fig. 7
+    ├── plot_scarce.py           # 16 measurement points                              -> Fig. 8
+    └── table_sensors.py         # 64 / 32 / 16 points                                -> Table 4
 ```
 
 **Run every command from the repository root.** The scripts are called as
@@ -203,7 +212,7 @@ Outputs in `results/verification/` (change with `--output-dir`):
 
 ---
 
-## Step 3 — MAP estimation, Cases 1–2: L-BFGS-B vs inexact Newton-CG (Table 3)
+## Step 3 — MAP estimation, Cases 1–2: L-BFGS-B vs inexact Newton-CG (Table 3, Fig. 3)
 
 `map_comparison.py` computes the MAP point of m = ln C with both
 optimizers, from the same initial guess (C ~ U(2, 10) kPa, seed 57), with the
@@ -234,3 +243,89 @@ CASES=fibrosis PHASES=newtoncg bash ellipsoid/run_noise_study.sh --gtol 1e-6 --f
 ### Outputs
 
 In `results/ellipsoid/noise_study/` (change with `OUT=...`):
+
+| File | Content |
+|---|---|
+| **`table_paper.tex`** | **Table 3** of the paper (`table_paper_standalone.tex` compiles on its own) |
+| `tables.tex` | four detailed tables: data and noise, cost, accuracy, agreement of the two methods |
+| `<method>/noise_XXX/<case>/metrics_<case>.json` | all settings, costs and errors of one run |
+| `<method>/noise_XXX/<case>/map_comparison_<case>.xdmf/.h5` | fields (truth, initial guess, MAP, errors) for ParaView and for Fig. 3 |
+| `<method>/noise_XXX/<case>/m_map_<method>_<case>.npy` | the MAP point |
+| `<method>/noise_XXX/run_<case>.log` | console output |
+| `forward/` | files written by `forward.py` during data generation |
+
+### Expected results (Table 3)
+
+| Problem | Noise | L-BFGS-B iter. / fwd | Newton-CG iter. / fwd / Hm | e_C^L2 [%] | e_C^core [%] |
+|---|---|---|---|---|---|
+| Case 1 | 0 % | 93 / 104 | 10 / 11 / 112 | 0.21 | – |
+| Case 1 | 1 % | 81 / 87 | 9 / 10 / 106 | 2.15 | – |
+| Case 1 | 3 % | 129 / 136 | 9 / 10 / 171 | 3.12 | – |
+| Case 2 | 0 % | 243 / 267 | 12 / 13 / 285 | 1.44 | 2.15 |
+| Case 2 | 1 % | 119 / 133 | 11 / 12 / 158 | 5.23 | 4.93 |
+| Case 2 | 3 % | 67 / 73 | 9 / 10 / 95 | 8.74 | 8.65 |
+
+The Newton-CG counts (iterations, forward solves, Hessian-vector products) and
+the errors are reproduced exactly. The L-BFGS-B counts can differ by a few
+iterations between machines or library builds: near the optimum the objective is
+flat, so round-off changes which line-search steps are accepted. A rerun gave
+128 / 135 (Case 1, 3 %), 249 / 274 (Case 2, 0 %) and 120 / 132 (Case 2, 1 %),
+with the same MAP points and errors. Wall times and speed-ups depend on the
+machine. Both methods reach the same MAP point (max nodal |Δm| < 4 × 10⁻⁶).
+
+**Note:** `forward.py` also writes `dof_coords.csv/.vtk/.xyz` (the measurement points)
+into the folder the command is run from.
+
+### Fig. 3 — ground truth and MAP maps
+
+Drawn from the runs above; nothing is recomputed. One row per case:
+ground truth, MAP at 0 %, 1 % and 3 % noise (Newton-CG; L-BFGS-B gives the same
+MAP points). Each heart is rendered off-screen with PyVista (matplotlib 3D if
+PyVista is not installed).
+
+```bash
+python -m ellipsoid.plot_maps --root results/ellipsoid/noise_study \
+    --out results/ellipsoid/fig_maps.pdf
+```
+
+Options: `--errors` also writes |C_MAP − C_true| (`fig_maps_errors.pdf`);
+`--clim-linear a b` / `--clim-fibrosis a b` fix the colour range of a row;
+`--view`, `--zoom` change the camera.
+
+**Colour scale:** by default each row uses the range of its ground truth
+(2–3 kPa and 2–6 kPa). In the paper the two rows share the colour range of the
+posterior-sample figure (Fig. 5), so that Figs. 3 and 5 can be compared
+directly. That needs the UQ results of Step 4; then:
+
+```bash
+python -m ellipsoid.plot_maps --root results/ellipsoid/noise_study \
+    --clim-from-uq results/ellipsoid/uq --out results/ellipsoid/fig_maps.pdf
+```
+
+---
+
+## Step 4 — Uncertainty quantification, Cases 1–2 (Figs. 4–8, Table 4)
+
+`uq.py` computes the MAP point (inexact Newton-CG), the leading eigenpairs of
+the prior-preconditioned data-misfit Hessian (randomized double pass), the
+pointwise posterior variance of the Laplace approximation and posterior
+samples. All runs use 0 % noise and the priors of Step 1.
+
+`run_uq_study.sh` has two parts:
+
+```bash
+bash ellipsoid/run_uq_study.sh run       # UQ runs (~3 h, serial)
+bash ellipsoid/run_uq_study.sh figures   # all figures and tables, from the runs
+```
+
+| Part | What | Output in `results/ellipsoid/` |
+|---|---|---|
+| `run` | 64 points, Cases 1 and 2 (500 eigenpairs) | `uq/<case>/` |
+| `run` | 32 and 16 points, Case 2 (250 eigenpairs) | `uq_s32/fibrosis/`, `uq_s16/fibrosis/` |
+| `figures` | **Fig. 4** eigenvalue spectra | `uq/eigenvalues.pdf` |
+| `figures` | **Fig. 5** truth, MAP, posterior samples | `uq/posterior_samples_<case>.pdf` |
+| `figures` | **Fig. 6** regional stiffness | `uq/fibrosis/qoi_fibrosis.pdf` |
+| `figures` | **Fig. 7** truth, P(C > 4 kPa), std reduction | `uq/fibrosis/uq_regions_fibrosis.pdf` |
+| `figures` | **Fig. 8** 16 measurement points | `fig_scarce_s16.pdf` |
+| `figures` | **Table 4** 64 / 32 / 16 points | `table_sensors.tex` |
+| `figures` | **Fig. 3** with the colour range of Fig. 5 (needs Step 3) | `fig_maps.pdf` |
